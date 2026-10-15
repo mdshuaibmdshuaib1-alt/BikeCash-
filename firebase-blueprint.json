@@ -1,0 +1,25 @@
+{
+  "bike_submissions": {
+    "__doc__": "Collection of bike submissions from users",
+    "fields": {
+      "brand": "string",
+      "model": "string",
+      "registrationYear": "string",
+      "registrationState": "string",
+      "kilometers": "number",
+      "condition": "string",
+      "expectedPrice": "number",
+      "description": "string",
+      "photos": "array",
+      "sellerName": "string",
+      "sellerMobile": "string",
+      "sellerCity": "string",
+      "sellerArea": "string",
+      "sellerAddress": "string",
+      "status": "string",
+      "userId": "string",
+      "createdAt": "timestamp",
+      "updatedAt": "timestamp"
+    }
+  }
+}
