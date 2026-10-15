@@ -27,18 +27,34 @@ jobs:
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-disabled: false
 
       - name: Prepare Signing Keystore and Environment
         run: |
           chmod +x gradlew
-          if [ -f debug.keystore.base64 ] && [ ! -f debug.keystore ]; then
-            echo "Restoring debug keystore from debug.keystore.base64..."
-            base64 -d debug.keystore.base64 > debug.keystore
+
+          # 1. Ensure debug.keystore exists
+          if [ ! -f debug.keystore ]; then
+            if [ -f debug.keystore.base64 ]; then
+              echo "Restoring debug keystore from debug.keystore.base64..."
+              base64 -d debug.keystore.base64 > debug.keystore
+            else
+              echo "Generating fresh debug keystore..."
+              keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+            fi
           fi
-          if [ ! -f .env ] && [ -f .env.example ]; then
-            cp .env.example .env
+
+          # 2. Ensure .env exists for Secrets Gradle Plugin
+          if [ ! -f .env ]; then
+            if [ -f .env.example ]; then
+              cp .env.example .env
+            else
+              touch .env
+            fi
           fi
-          # Restore app/google-services.json if missing from checkout
+
+          # 3. Ensure app/google-services.json exists for Google Services Plugin
           if [ ! -f app/google-services.json ]; then
             if [ -n "${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}" ]; then
               echo "Restoring app/google-services.json from GitHub Secret..."
@@ -49,6 +65,58 @@ jobs:
             elif [ -f google-services.json ]; then
               echo "Copying google-services.json to app/google-services.json..."
               cp google-services.json app/google-services.json
+            else
+              echo "Writing embedded fallback app/google-services.json..."
+              mkdir -p app
+              cat << 'EOF' > app/google-services.json
+{
+  "project_info": {
+    "project_number": "159766537979",
+    "project_id": "bikecash",
+    "storage_bucket": "bikecash.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:159766537979:android:031565e73ae952d75e725e",
+        "android_client_info": {
+          "package_name": "com.aistudio.bikecash.mptw"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "159766537979-6pjnes4pcarlgirkuhv29p0odcmd0dlk.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.aistudio.bikecash.mptw",
+            "certificate_hash": "45997f18d08604a0c5bac950743c6a446bcc5471"
+          }
+        },
+        {
+          "client_id": "159766537979-7qij25a26rsr36eoem076c610bia7m1e.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCin0nFQ_xhgE6X5BclpBuAHPt0YYMFCqg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "159766537979-7qij25a26rsr36eoem076c610bia7m1e.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
+EOF
             fi
           fi
 
@@ -68,11 +136,11 @@ jobs:
           fi
 
       - name: Build Debug APK (Installable on any Android device)
-        run: ./gradlew assembleDebug --stacktrace
+        run: ./gradlew assembleDebug --no-daemon --no-configuration-cache --stacktrace
 
       - name: Build Release APK (if release secrets configured)
         if: steps.release_check.outputs.has_release == 'true'
-        run: ./gradlew assembleRelease --stacktrace
+        run: ./gradlew assembleRelease --no-daemon --no-configuration-cache --stacktrace
 
       - name: Upload APKs to Artifacts
         uses: actions/upload-artifact@v4
