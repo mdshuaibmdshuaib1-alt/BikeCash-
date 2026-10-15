@@ -51,7 +51,12 @@ fun GoogleSignInButton(
     BikeCashButton(
         onClick = {
             isLoading = true
-            val clientId = context.getString(R.string.default_web_client_id)
+            val resId = context.resources.getIdentifier("default_web_client_id", "string", context.packageName)
+            val clientId = if (resId != 0) {
+                context.getString(resId)
+            } else {
+                "159766537979-7qij25a26rsr36eoem076c610bia7m1e.apps.googleusercontent.com"
+            }
             val signInOption = GetSignInWithGoogleOption.Builder(serverClientId = clientId).build()
             val request = GetCredentialRequest.Builder().addCredentialOption(signInOption).build()
             
