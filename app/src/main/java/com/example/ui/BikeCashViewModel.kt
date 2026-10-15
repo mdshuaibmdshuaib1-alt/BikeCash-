@@ -59,6 +59,21 @@ class BikeCashViewModel : ViewModel() {
         }
     }
 
+    suspend fun submitFullSubmission(
+        submission: BikeSubmission,
+        photoUris: List<Uri>,
+        repository: BikeRepository
+    ): Result<String> {
+        return try {
+            val uploadedPhotoUrls = repository.uploadPhotosSafe(photoUris)
+            val finalSubmission = submission.copy(photos = uploadedPhotoUrls)
+            val id = repository.submitBike(finalSubmission)
+            Result.success(id)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     fun updateContactDetails(name: String, mobile: String) {
         _uiState.value = _uiState.value.copy(
             fullName = name,

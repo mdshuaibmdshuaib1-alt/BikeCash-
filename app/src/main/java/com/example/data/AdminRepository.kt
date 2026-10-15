@@ -10,9 +10,7 @@ import com.google.firebase.auth.FirebaseAuth
 
 class AdminRepository(private val db: FirebaseFirestore) {
     constructor(context: Context) : this(
-        FirebaseFirestore.getInstance(
-            context.applicationContext.getString(R.string.firestore_database_id)
-        )
+        BikeRepository.resolveFirestore(context)
     )
 
     suspend fun getAllSubmissions(): List<BikeSubmission> {

@@ -70,21 +70,24 @@ fun ReviewScreen(navController: NavController, viewModel: BikeCashViewModel) {
                     isSubmitting = true
                     scope.launch {
                         try {
-                            val photoUrls = state.photoUris.map { uri -> repository.uploadPhoto(uri) }
-                            val finalSubmission = submission.copy(estimate = estimate, photos = photoUrls)
-                            viewModel.submitSubmission(finalSubmission, repository) { id, error ->
-                                if (id != null) {
-                                    navController.navigate(com.example.navigation.SubmissionSuccess(id)) {
-                                        popUpTo(0) { inclusive = true }
-                                    }
-                                } else {
-                                    isSubmitting = false
-                                    scope.launch { snackbarHostState.showSnackbar(error ?: "Submission failed. Please retry.") }
+                            val result = viewModel.submitFullSubmission(
+                                submission = submission.copy(estimate = estimate),
+                                photoUris = state.photoUris,
+                                repository = repository
+                            )
+                            if (result.isSuccess) {
+                                val id = result.getOrNull() ?: ""
+                                navController.navigate(com.example.navigation.SubmissionSuccess(id)) {
+                                    popUpTo(com.example.navigation.Home) { inclusive = false }
                                 }
+                            } else {
+                                isSubmitting = false
+                                val errorMsg = result.exceptionOrNull()?.localizedMessage ?: "Submission failed. Please check connection and retry."
+                                snackbarHostState.showSnackbar(errorMsg)
                             }
                         } catch (e: Exception) {
                             isSubmitting = false
-                            scope.launch { snackbarHostState.showSnackbar("Upload/Submission failed: ${e.message}") }
+                            snackbarHostState.showSnackbar("Submission error: ${e.localizedMessage ?: e.message}")
                         }
                     }
                 },

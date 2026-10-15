@@ -22,7 +22,15 @@ fun SubmissionSuccessScreen(navController: NavController, submissionId: String) 
             Text("Submission ID: $submissionId", style = MaterialTheme.typography.bodyLarge)
             Text("Status: Pending Review", style = MaterialTheme.typography.bodyMedium)
             Spacer(modifier = Modifier.height(32.dp))
-            BikeCashButton(onClick = { navController.navigate(Home) { popUpTo(Home) { inclusive = true } } }, text = "Back to Home")
+            BikeCashButton(
+                onClick = {
+                    val popped = navController.popBackStack(Home, false)
+                    if (!popped) {
+                        navController.navigate(Home)
+                    }
+                },
+                text = "Back to Home"
+            )
         }
     }
 }
