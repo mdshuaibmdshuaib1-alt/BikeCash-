@@ -20,5 +20,4 @@ debug.keystore
 # Ensure Firebase config and keystore backups are tracked in repository
 !app/google-services.json
 !google-services.json
-!google-services.json.base64
 !debug.keystore.base64

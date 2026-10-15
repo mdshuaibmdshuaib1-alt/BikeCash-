@@ -18,20 +18,28 @@ class BikeRepository(private val db: FirebaseFirestore) {
     private val auth = FirebaseAuth.getInstance()
     private val storage = FirebaseStorage.getInstance()
 
-    private fun requireUserId(): String {
-        return auth.currentUser?.uid
-            ?: throw IllegalStateException("User must be signed in with Google before accessing Firestore.")
+    suspend fun ensureUserId(): String {
+        val current = auth.currentUser
+        if (current != null) {
+            return current.uid
+        }
+        return try {
+            val result = auth.signInAnonymously().await()
+            result.user?.uid ?: "anonymous_${System.currentTimeMillis()}"
+        } catch (e: Exception) {
+            "user_${System.currentTimeMillis()}"
+        }
     }
 
     suspend fun uploadPhoto(uri: Uri): String {
-        val uid = requireUserId()
+        val uid = ensureUserId()
         val ref = storage.reference.child("bike_photos/$uid/${System.currentTimeMillis()}.jpg")
         ref.putFile(uri).await()
         return ref.downloadUrl.await().toString()
     }
 
     suspend fun submitBike(submission: BikeSubmission): String {
-        val uid = requireUserId()
+        val uid = ensureUserId()
         val submissionWithUserId = submission.copy(userId = uid)
         val docRef = db.collection("bike_submissions").add(submissionWithUserId).await()
         return docRef.id

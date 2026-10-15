@@ -61,45 +61,36 @@ fun ReviewScreen(navController: NavController, viewModel: BikeCashViewModel) {
             val repository = remember { com.example.data.BikeRepository(context) }
             var isSubmitting by remember { mutableStateOf(false) }
             val scope = rememberCoroutineScope()
-            var currentUser by remember { mutableStateOf(FirebaseAuth.getInstance().currentUser) }
-
-            if (currentUser == null) {
-                GoogleSignInButton(
-                    onAuthSuccess = { currentUser = FirebaseAuth.getInstance().currentUser },
-                    onAuthError = { /* Handle error */ }
-                )
-            } else {
-                BikeCashButton(
-                    onClick = {
-                        if (state.brand.isBlank() || state.model.isBlank() || state.fullName.isBlank() || state.mobileNumber.isBlank()) {
-                            scope.launch { /* Show snackbar */ }
-                            return@BikeCashButton
-                        }
-                        isSubmitting = true
-                        scope.launch {
-                            try {
-                                val photoUrls = state.photoUris.map { uri -> repository.uploadPhoto(uri) }
-                                val finalSubmission = submission.copy(estimate = estimate, photos = photoUrls)
-                                viewModel.submitSubmission(finalSubmission, repository) { id, error ->
-                                    if (id != null) {
-                                        navController.navigate(com.example.navigation.SubmissionSuccess(id)) {
-                                            popUpTo(0) { inclusive = true }
-                                        }
-                                    } else {
-                                        isSubmitting = false
-                                        // Show error
+            BikeCashButton(
+                onClick = {
+                    if (state.brand.isBlank() || state.model.isBlank() || state.fullName.isBlank() || state.mobileNumber.isBlank()) {
+                        scope.launch { snackbarHostState.showSnackbar("Please fill in all required fields.") }
+                        return@BikeCashButton
+                    }
+                    isSubmitting = true
+                    scope.launch {
+                        try {
+                            val photoUrls = state.photoUris.map { uri -> repository.uploadPhoto(uri) }
+                            val finalSubmission = submission.copy(estimate = estimate, photos = photoUrls)
+                            viewModel.submitSubmission(finalSubmission, repository) { id, error ->
+                                if (id != null) {
+                                    navController.navigate(com.example.navigation.SubmissionSuccess(id)) {
+                                        popUpTo(0) { inclusive = true }
                                     }
+                                } else {
+                                    isSubmitting = false
+                                    scope.launch { snackbarHostState.showSnackbar(error ?: "Submission failed. Please retry.") }
                                 }
-                            } catch (e: Exception) {
-                                isSubmitting = false
-                                // Show error
                             }
+                        } catch (e: Exception) {
+                            isSubmitting = false
+                            scope.launch { snackbarHostState.showSnackbar("Upload/Submission failed: ${e.message}") }
                         }
-                    },
-                    text = if (isSubmitting) "Submitting..." else "Submit",
-                    enabled = !isSubmitting
-                )
-            }
+                    }
+                },
+                text = if (isSubmitting) "Submitting..." else "Submit",
+                enabled = !isSubmitting
+            )
         }
     }
 }

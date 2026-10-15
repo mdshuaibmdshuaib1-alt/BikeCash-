@@ -56,67 +56,17 @@ jobs:
 
           # 3. Ensure app/google-services.json exists for Google Services Plugin
           if [ ! -f app/google-services.json ]; then
-            if [ -n "${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}" ]; then
-              echo "Restoring app/google-services.json from GitHub Secret..."
+            if [ -n "${{ secrets.GOOGLE_SERVICES_JSON }}" ]; then
+              echo "Restoring app/google-services.json from GOOGLE_SERVICES_JSON secret..."
+              echo "${{ secrets.GOOGLE_SERVICES_JSON }}" > app/google-services.json
+            elif [ -n "${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}" ]; then
+              echo "Restoring app/google-services.json from GOOGLE_SERVICES_JSON_BASE64 secret..."
               echo "${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}" | base64 -d > app/google-services.json
-            elif [ -f google-services.json.base64 ]; then
-              echo "Restoring app/google-services.json from google-services.json.base64..."
-              base64 -d google-services.json.base64 > app/google-services.json
             elif [ -f google-services.json ]; then
-              echo "Copying google-services.json to app/google-services.json..."
+              echo "Copying root google-services.json to app/google-services.json..."
               cp google-services.json app/google-services.json
             else
-              echo "Writing embedded fallback app/google-services.json..."
-              mkdir -p app
-              cat << 'EOF' > app/google-services.json
-{
-  "project_info": {
-    "project_number": "159766537979",
-    "project_id": "bikecash",
-    "storage_bucket": "bikecash.firebasestorage.app"
-  },
-  "client": [
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:159766537979:android:031565e73ae952d75e725e",
-        "android_client_info": {
-          "package_name": "com.aistudio.bikecash.mptw"
-        }
-      },
-      "oauth_client": [
-        {
-          "client_id": "159766537979-6pjnes4pcarlgirkuhv29p0odcmd0dlk.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.aistudio.bikecash.mptw",
-            "certificate_hash": "45997f18d08604a0c5bac950743c6a446bcc5471"
-          }
-        },
-        {
-          "client_id": "159766537979-7qij25a26rsr36eoem076c610bia7m1e.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
-      "api_key": [
-        {
-          "current_key": "AIzaSyCin0nFQ_xhgE6X5BclpBuAHPt0YYMFCqg"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "159766537979-7qij25a26rsr36eoem076c610bia7m1e.apps.googleusercontent.com",
-              "client_type": 3
-            }
-          ]
-        }
-      }
-    }
-  ],
-  "configuration_version": "1"
-}
-EOF
+              echo "::warning ::app/google-services.json was not found in the checkout. To connect to Firebase, commit app/google-services.json or set the GOOGLE_SERVICES_JSON secret."
             fi
           fi
 
